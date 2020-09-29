@@ -1,48 +1,48 @@
 !**********************************************************************************************************
-!                                                                                                         !      
+!                                                                                                         !
 !                                          UEL for AT1 and AT2                                            !
-!                                        BFGS quasi-newton solver                                         !                                       
+!                                        BFGS quasi-newton solver                                         !
 !                                                                                                         !
 !**********************************************************************************************************
 *  Copyright (C) 2019 South China University of Technology, China. All rights reserved.
-*  
-*  This subroutine implemens the phase field models (AT1 and AT2) for brittle fracture
 *
-*  AT1: Bourdin, B., Francfort, G., Marigo, J.-J., 2000. Numerical experiments in revisited brittle fracture. 
+*  This subroutine implements the phase field models (AT1 and AT2) for brittle fracture
+*
+*  AT1: Bourdin, B., Francfort, G., Marigo, J.-J., 2000. Numerical experiments in revisited brittle fracture.
 *       J. Mech. Phys. Solids 48 (4), 797–826.
-*  AT2: Pham, K., Amor, H., Marigo, J.-J., Maurini, C., 2011. Gradient damage models and their use to 
+*  AT2: Pham, K., Amor, H., Marigo, J.-J., Maurini, C., 2011. Gradient damage models and their use to
 *       approximate brittle fracture. International Journal of Damage Mechanics 20, 618–652.*
-*      
+*
 *  Status: only 2D plane stress and CPS4 elements are considered.
-*  
+*
 *  Author: J. Y. Wu (jywu@scut.edu.cn) and Y. Huang
 *  Date: 13 Dec. 2019
 *
 *
 *  If you want to use this subroutine (research ONLY), please cite our papers:
-*  1. Wu, J. Y., 2017. A unified phase-field theory for the mechanics of damage and quasi-brittle failure. 
+*  1. Wu, J. Y., 2017. A unified phase-field theory for the mechanics of damage and quasi-brittle failure.
 *     Journal of the Mechanics and Physics of Solids, 103: 72-99.
-*  2. Wu, J. Y., 2018. A geometrically regularized gradient damage model with energetic equivalence. 
+*  2. Wu, J. Y., 2018. A geometrically regularized gradient damage model with energetic equivalence.
 *     Computer Methods in Applied Mechanics and Engineering, 328: 612-637.
-*  3. Wu, J. Y. and Nguyen, V.P., 2018. A length scale insensitive phase-field damage model for brittle 
+*  3. Wu, J. Y. and Nguyen, V.P., 2018. A length scale insensitive phase-field damage model for brittle
 *     fracture. Journal of the Mechanics and Physics of Solids, 119: 20-42.
-*  4. Wu, J. Y., Huang, Y. and Nguyen, V. P., 2019. On the BFGS monolithic algorithm for the unified 
+*  4. Wu, J. Y., Huang, Y. and Nguyen, V. P., 2019. On the BFGS monolithic algorithm for the unified
 *     phase-field damage theory. Computer Methods in Applied Mechanics and Engineering, 112704.
-*  5. Wu, J. Y. and Huang, Y., 2019. Comprehensive ABAQUS implementation of phase-field damage models  
+*  5. Wu, J. Y. and Huang, Y., 2019. Comprehensive ABAQUS implementation of phase-field damage models
 *     for fracture in solids. Theoretical and Applied Fracutre Mechancis, in press.
-*      
+*
 !**********************************************************************************************************
 !
       module NumKind
 !
 !**********************************************************************************************************
         implicit none
-        integer (kind(1)), parameter :: ikind = kind(1), 
-     &                                  rkind = kind(0.D0), 
+        integer (kind(1)), parameter :: ikind = kind(1),
+     &                                  rkind = kind(0.D0),
      &                                  lkind = kind(.true.)
-!       
+!
       end module Numkind
-      
+
 
 !**********************************************************************************************************
 !
@@ -58,16 +58,16 @@
         logical (lkind) :: bInitialized = .false.
 
         ! Tolerance
-        real    (rkind), parameter :: TOL = 1.0d-12 
+        real    (rkind), parameter :: TOL = 1.0d-12
         ! number of guass points
         integer (ikind), parameter :: ngp = 2
-        
-        ! 
+
+        !
         real(rkind) :: thk, EA, nu, at, Gf, lb
         real(rkind) :: ft, c0
-        real(rkind) :: De(3, 3)        
+        real(rkind) :: De(3, 3)
         real(rkind) :: gp(ngp), gw(ngp)
-        real(rkind) :: QQ(12,12) 
+        real(rkind) :: QQ(12,12)
 
         !
         contains
@@ -88,7 +88,7 @@
             nu   =  props(2) ! props(2) -- Poisson's ratio
             at   =  props(3) ! props(3) -- AT1 (xi = 1) and AT2 (xi = 0)
             Gf   =  props(4) ! props(4) -- fracture energy
-            lb   =  props(5) ! props(5) -- length scale            
+            lb   =  props(5) ! props(5) -- length scale
             thk  =  props(6) ! props(6) -- thickness
             if (thk < TOL) thk = 1.0
 
@@ -109,24 +109,24 @@
             De(:,1) = (/ K11,  K12, 0.D0/)
             De(:,2) = (/ K12,  K11, 0.D0/)
             De(:,3) = (/0.D0, 0.D0,   G0/)
-            
+
             ! integration points
             gp = (/ -1.d0, 1.d0 /) / dsqrt(3.d0)
             gw = (/  1.d0, 1.d0 /)
-            
+
             ! dof interchange
             indexq = (/ 1,2,9, 3,4,10, 5,6,11, 7,8,12 /)
             ! interchange the locations of dofs
             QQ = 0.d0
             do i = 1, 12
               QQ(indexq(i),i) = 1.d0
-            end do             
-            
+            end do
+
             bInitialized = .true.
-            
+
             return
           end subroutine Initialize
-      !========================================================================= 
+      !=========================================================================
       end module ModelParam
 
 !**********************************************************************************************************
@@ -137,56 +137,56 @@
         use NumKind
         implicit none
 
-        contains      
-          !==================shape function and its derivative with xi and eta======================    
+        contains
+          !==================shape function and its derivative with xi and eta======================
           subroutine shapefuc(n, dn_xieta, xi, eta)
-          
-            implicit none      
+
+            implicit none
             real(rkind) :: n(4), dn_xieta(2, 4), xi, eta
 
             n(1) = 0.25d0*(1.d0 - xi)*(1.d0 - eta)
             n(2) = 0.25d0*(1.d0 + xi)*(1.d0 - eta)
             n(3) = 0.25d0*(1.d0 + xi)*(1.d0 + eta)
             n(4) = 0.25d0*(1.d0 - xi)*(1.d0 + eta)
-            
+
             dn_xieta(1, 1) = -0.25d0*(1.d0 - eta)
             dn_xieta(1, 2) =  0.25d0*(1.d0 - eta)
             dn_xieta(1, 3) =  0.25d0*(1.d0 + eta)
             dn_xieta(1, 4) = -0.25d0*(1.d0 + eta)
-            
+
             dn_xieta(2, 1) = -0.25d0*(1.d0 - xi)
             dn_xieta(2, 2) = -0.25d0*(1.d0 + xi)
             dn_xieta(2, 3) =  0.25d0*(1.d0 + xi)
             dn_xieta(2, 4) =  0.25d0*(1.d0 - xi)
-            
-            return 
+
+            return
           end subroutine shapefuc
 
-          !===============traditional b matrix==============================================      
+          !===============traditional b matrix==============================================
           subroutine b_matrix(nd,bd,b,det_jacb, coords,xi,eta)
-          
+
             implicit none
             real(rkind) :: nd(4), bd(2,4), b(3,8)
             real(rkind) :: jacb(2,2), inv_jacb(2,2), coords(2, 4)
             real(rkind) :: det_jacb, xi, eta
-            
+
             !local varibles
             real(rkind) :: n(4), dn_xieta(2,4), dn_x(4), dn_y(4)
             integer(ikind) :: i, j
-             
-            ! shape functions 
+
+            ! shape functions
             call shapefuc(n,dn_xieta,xi,eta)
             nd = n
-            
+
             ! jacob matrix
-            jacb = matmul(dn_xieta, transpose(coords))            
+            jacb = matmul(dn_xieta, transpose(coords))
             det_jacb = jacb(1,1)*jacb(2,2) - jacb(1,2)*jacb(2,1)
             inv_jacb(1, 1) = jacb(2, 2)
             inv_jacb(1, 2) =-jacb(1, 2)
             inv_jacb(2, 1) =-jacb(2, 1)
             inv_jacb(2, 2) = jacb(1, 1)
-            inv_jacb = 1.d0/det_jacb*inv_jacb            
-            
+            inv_jacb = 1.d0/det_jacb*inv_jacb
+
             !initialize varibles
             do i = 1,4
               dn_x(i) = inv_jacb(1,1)*dn_xieta(1,i)
@@ -194,7 +194,7 @@
               dn_y(i) = inv_jacb(2,1)*dn_xieta(1,i)
      &                + inv_jacb(2,2)*dn_xieta(2,i)
             end do
-            
+
             ! B matrix for displacement
             b = 0.d0
             do j = 1, 4
@@ -203,16 +203,16 @@
               b(3, 2*(j-1) + 1) = dn_y(j)
               b(3, 2*(j-1) + 2) = dn_x(j)
             end do
-            
+
             ! B matrix for damage
             do j = 1,4
               bd(1,j) = dn_x(j)
               bd(2,j) = dn_y(j)
             end do
-          
+
             return
           end subroutine b_matrix
-      
+
         !********************************************************************
         ! define the dyadic function
           function dyadic(vector1,vector2, vlen)
@@ -220,7 +220,7 @@
             integer (ikind) :: vlen, i, j
             real    (rkind) :: vector1(vlen),vector2(vlen)
             real    (rkind) :: dyadic(vlen,vlen)
-          
+
             do i = 1, vlen
               do j = 1, vlen
                 dyadic(i,j) = vector1(i) * vector2(j)
@@ -231,7 +231,7 @@
           end function dyadic
 
       end module FEM
-      
+
 
 !**********************************************************************************************************
 !
@@ -245,7 +245,7 @@
 
         real(rkind):: rhs(12), amatrix(12,12), coords(2,4)
         real(rkind):: svars(4), u(12)
-       
+
         ! local varibles
         real(rkind):: b(3,8), nd(4), bd(2,4)
         real(rkind):: uu(8), dd(4), rd(4), ru(8), kdd(4,4), kuu(8,8)
@@ -256,22 +256,22 @@
         integer(ikind):: i, j, k
 
         real(rkind):: savg, sdif, sdev, smax, smin
-        
+
         ! extrat nodal displacement and damage dofs
         do i = 1, 4
           uu(2*i - 1) = u(3*i - 2)
           uu(2*i    ) = u(3*i - 1)
           dd(i)       = u(3*i)
         end do
-        
+
         ! initialize varibles
         rd  = 0.d0
         kdd = 0.d0
         kuu = 0.d0
         do i = 1, ngp
-          do j = 1, ngp      
+          do j = 1, ngp
             call b_matrix(nd,bd,b,det_jacb, coords,gp(i),gp(j))
-              
+
             strain = matmul(b, uu)  ! strain field
             stressEff = matmul(De, strain) ! effective stress
 
@@ -287,11 +287,11 @@ c           max/min pricipal stress
             energy_crk = 0.5d0*max(smax, ft)**2/EA
             energy_crk = max(energy_crk, svars(k))
             svars(k) = energy_crk
-            
-            phi  = dot_product(nd,dd) ! crack phase-field            
+
+            phi  = dot_product(nd,dd) ! crack phase-field
             call geometricFunc(dalpha,ddalpha,phi) ! geometric function
             call energeticFunc(omega,domega,ddomega,phi) ! energetic function
-     
+
             phi_source  = domega *energy_crk + Gf/(c0*lb)*dalpha
             dphi_source = ddomega*energy_crk + Gf/(c0*lb)*ddalpha
 
@@ -303,25 +303,25 @@ c           max/min pricipal stress
             ! element matrices
             kdd =  kdd + dvol*((dphi_source)*dyadic(nd, nd, 4)
      &          +  2.d0*lb*Gf/c0*matmul(transpose(bd),bd))
-            
+
             kuu =  kuu + dvol*matmul(matmul(transpose(b), omega*De), b)
           end do
-        end do        
+        end do
         ru = -matmul(kuu,uu) ! applies to hybrid formulation
-        
+
         rr(1:8 ) = ru
         rr(9:12) = rd
-        
+
         kk = 0.d0
         kk(1:8 , 1:8 ) = kuu
         kk(9:12, 9:12) = kdd
-        
+
         rhs     = matmul(transpose(QQ),rr)
         amatrix = matmul(matmul(transpose(QQ),kk),QQ)
-  
-        return 
+
+        return
       end subroutine pfczm
-      
+
 !**********************************************************************************************************
 !
       subroutine energeticFunc(omega,domega,ddomega,phi)
@@ -330,16 +330,16 @@ c           max/min pricipal stress
         use NumKind
         use ModelParam
         implicit none
-      
+
         real(rkind) :: omega, domega, ddomega, phi
-      
-        omega   =  (1.d0 - phi)**2        
+
+        omega   =  (1.d0 - phi)**2
         domega  = -2.d0*(1.d0 - phi)
         ddomega =  2.d0
-     
+
         return
       end subroutine energeticFunc
-      
+
 !**********************************************************************************************************
 !
       subroutine geometricFunc(dalpha,ddalpha,phi)
@@ -348,19 +348,19 @@ c           max/min pricipal stress
         use NumKind
         use ModelParam
         implicit none
-        
+
         real(rkind) :: dalpha, ddalpha, phi
-        
+
         dalpha  = at + 2.d0*(1.d0 - at)*phi
         ddalpha = 2.d0*(1.d0 - at)
-        
-        return 
-      end subroutine geometricFunc  
-     
+
+        return
+      end subroutine geometricFunc
+
 !**********************************************************************************************************
       subroutine UEL(rhs, amatrx, svars, energy, ndofel, nrhs, nsvars,
-     &               props, nprops, coords, mcrd, nnode, 
-     &               u, du, v, a, jtype, time, dtime, kstep, 
+     &               props, nprops, coords, mcrd, nnode,
+     &               u, du, v, a, jtype, time, dtime, kstep,
      &               kinc, jelem, params, ndload, jdltyp, adlmag,
      &               predef, npredf, lflags, mlvarx, ddlmag, mdload,
      &               pnewdt, jprops,njprop,period)
@@ -373,38 +373,38 @@ c           max/min pricipal stress
 !**********************************************************************************************************
       ! interface of uel, DO NOT change !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! variables passed in
-        integer (ikind), intent (in    ) :: ndofel, mlvarx, nrhs, 
-     &    nsvars, nprops, mcrd, nnode, jtype, kstep, kinc, jelem, 
+        integer (ikind), intent (in    ) :: ndofel, mlvarx, nrhs,
+     &    nsvars, nprops, mcrd, nnode, jtype, kstep, kinc, jelem,
      &    ndload,npredf, mdload, njprop
-     
-        integer (ikind), intent (in    ) :: jdltyp(mdload,*), 
+
+        integer (ikind), intent (in    ) :: jdltyp(mdload,*),
      &    lflags(*), jprops(njprop)
-     
-        real    (rkind), intent (in    ) :: props(nprops), 
-     &    coords(mcrd,nnode), u(ndofel), du(mlvarx,*), v(ndofel), 
+
+        real    (rkind), intent (in    ) :: props(nprops),
+     &    coords(mcrd,nnode), u(ndofel), du(mlvarx,*), v(ndofel),
      &    a(ndofel), time(2), params(3), adlmag(mdload,*),
      &    ddlmag(mdload,*), predef(2,npredf,nnode), dtime, period
-     
+
         ! variables can be updated
         real    (rkind), intent (in out) :: pnewdt
-  
+
         ! variables to be updated (the update of energy(8) is optional)
-        real    (rkind), intent (in out) :: rhs(mlvarx,nrhs), 
+        real    (rkind), intent (in out) :: rhs(mlvarx,nrhs),
      &    amatrx(ndofel,ndofel), svars(nsvars), energy(8)
       ! interface of uel, DO NOT change !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !********************************************************************************************************
-      !                   
+      !
       ! user coding to define rhs, amatrx, svars, energy and pnewdt (optional for the last two)
       !
-        
+
         write (*, *) 'TIME = ', time(2)
 
-        ! initialize parameters, etc.                     
+        ! initialize parameters, etc.
         if (.not. bInitialized) call Initialize(props, nprops, jtype)
-        
+
         ! right now only Q4 element is implemented
         call pfczm(rhs(1:ndofel,1),amatrx,coords,u,svars)
-        
+
         return
 
       end subroutine uel
