@@ -38,6 +38,7 @@
 !
       end module Numkind
 
+
 !**********************************************************************************************************
 !
       module ModelParam
@@ -45,6 +46,8 @@
 !**********************************************************************************************************
         use NumKind
         implicit none
+
+        ! Constants
 
         ! Flag of initilization
         logical (lkind) :: bInitialized = .false.
@@ -77,19 +80,18 @@
             real    (rkind), intent (in) :: props(nprops)
 
             !********************************************
-            real   (rkind) :: G0, K11, K12
+            real(rkind) :: G0, K11, K12
             integer(ikind) :: indexq(16), i
 
             je = jelem
 
             ! material properties
-            EA  = props(1) ! props(1) -- Young's modulus
-            nu  = props(2) ! props(2) -- Poisson's ratio
-            ft  = props(3) ! props(3) -- failure strength
-            Gf  = props(4) ! props(4) -- fracture energy
-            lb  = props(5) ! props(5) -- length scale
-            ! thickness
-            thk = props(6) ! props(6) -- thickness
+            EA   =  props(1) ! props(1) -- Young's modulus
+            nu   =  props(2) ! props(2) -- Poisson's ratio
+            ft   =  props(3) ! props(3) -- failure strength
+            Gf   =  props(4) ! props(4) -- fracture energy
+            lb   =  props(5) ! props(5) -- length scale
+            thk  =  props(6) ! props(6) -- thickness
             if (thk < TOL) thk = 1.0
 
             ! elastic stiffness matrix
@@ -125,9 +127,9 @@
             else
               write (*,*) '**error: Softening law No. ', istype,
      &                    'does not exist!'
-            endif
+            end if
 
-            ! integration
+            ! integration points
             gp = (/ -1.d0, 1.d0 /) / dsqrt(3.d0)
             gw = (/  1.d0, 1.d0 /)
 
@@ -137,7 +139,7 @@
             QQ = 0.d0
             do i = 1, 16
               QQ(indexq(i),i) = 1.d0
-            enddo
+            end do
 
             bInitialized = .true.
 
@@ -145,7 +147,6 @@
           end subroutine Initialize
       !=========================================================================
       end module ModelParam
-
 
 !**********************************************************************************************************
 !
@@ -179,6 +180,7 @@
 
             return
           end subroutine shapefuc
+
           !===============traditional b matrix==============================================
           subroutine b_matrix(nd,bd,b,det_jacb, coords,xi,eta)
 
@@ -205,25 +207,27 @@
             inv_jacb = 1.d0/det_jacb*inv_jacb
 
             !initialize varibles
-            b = 0.d0
             do i = 1,4
               dn_x(i) = inv_jacb(1,1)*dn_xieta(1,i)
      &                + inv_jacb(1,2)*dn_xieta(2,i)
               dn_y(i) = inv_jacb(2,1)*dn_xieta(1,i)
      &                + inv_jacb(2,2)*dn_xieta(2,i)
-            enddo
+            end do
 
+            ! B matrix for displacement
+            b = 0.d0
             do j = 1, 4
               b(1, 2*(j-1) + 1) = dn_x(j)
               b(2, 2*(j-1) + 2) = dn_y(j)
               b(3, 2*(j-1) + 1) = dn_y(j)
               b(3, 2*(j-1) + 2) = dn_x(j)
-            enddo
+            end do
 
+            ! B matrix for damage
             do j = 1,4
               bd(1,j) = dn_x(j)
               bd(2,j) = dn_y(j)
-            enddo
+            end do
 
             return
           end subroutine b_matrix
@@ -239,13 +243,14 @@
             do i = 1, vlen
               do j = 1, vlen
                 dyadic(i,j) = vector1(i) * vector2(j)
-              enddo
-            enddo
+              end do
+            end do
 
             return
           end function dyadic
 
       end module FEM
+
 
 !**********************************************************************************************************
 !
@@ -270,6 +275,7 @@
 
         real(rkind):: savg, sdif, sdev, smax, smin
 
+        ! extrat nodal displacement and damage dofs
         do i = 1, 4
           uu(2*i - 1 ) = u(4*i  - 3)
           uu(2*i     ) = u(4*i  - 2)
@@ -301,23 +307,24 @@ c           max/min pricipal stress
             svars(k) = energy_pos
 
             phi  = dot_product(nd,dd) ! crack phase-field
-            call geometricFunc(dalpha,ddalpha,phi)
-            call energeticFunc(omega,domega,ddomega,phi)
+            call geometricFunc(dalpha,ddalpha,phi) ! geometric function
+            call energeticFunc(omega,domega,ddomega,phi) ! energetic function
 
-            phi_source  = domega*energy_pos  + Gf/(c0*lb)*dalpha
+            phi_source  = domega *energy_pos + Gf/(c0*lb)*dalpha
             dphi_source = ddomega*energy_pos + Gf/(c0*lb)*ddalpha
 
             ! residual for damage
-            dvol =  gw(i)*gw(j)*det_jacb*thk
-            rd   =  rd  + dvol*(phi_source*nd + 2.d0*lb*Gf/c0
-     3           *  matmul(transpose(bd), matmul(bd, dd)))
+            dvol=  gw(i)*gw(j)*det_jacb*thk
+            rd  =  rd  + dvol*(phi_source*nd + 2.d0*lb*Gf/c0
+     &          *  matmul(transpose(bd), matmul(bd, dd)))
 
-            kuu  =  kuu + dvol*matmul(matmul(transpose(b), omega*De), b)
+            ! element matrices
+            kdd =  kdd + dvol*((dphi_source)*dyadic(nd, nd, 4)
+     &          +  2.d0*lb*Gf/c0*matmul(transpose(bd),bd))
 
-            kdd  =  kdd + dvol*(dphi_source*dyadic(nd, nd, 4)
-     &           +  2.d0*lb*Gf/c0*matmul(transpose(bd),bd))
-          enddo
-        enddo
+            kuu =  kuu + dvol*matmul(matmul(transpose(b), omega*De), b)
+          end do
+        end do
         ru = matmul(kuu,uu) ! applies to hybrid formulation
 
         rr = 0.d0
@@ -331,8 +338,8 @@ c           max/min pricipal stress
         enddo
 
         ! interchange the locations of various
-        fk = matmul(transpose(QQ), rr)
-        ak = matmul(matmul(transpose(QQ),k k), QQ)
+        fk = matmul(transpose(QQ),rr)
+        ak = matmul(matmul(transpose(QQ),kk),QQ)
 
         return
       end subroutine pfczm
@@ -346,7 +353,6 @@ c           max/min pricipal stress
         use ModelParam
         implicit none
 
-        ! local varibles
         real(rkind) :: omega, domega, ddomega, phi
         real(rkind) :: fac1, dfac1, ddfac1, fac2, dfac2, ddfac2
 

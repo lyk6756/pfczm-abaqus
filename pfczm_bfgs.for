@@ -104,19 +104,19 @@
               p  =  2.d0
               a2 = -0.5d0
               a3 =  0.0d0
-            else if (istype == 2) then  ! exponential softening
+            elseif (istype == 2) then  ! exponential softening
               p  =  2.5d0
               a2 =  2.0d0**(5.d0/3.d0) - 3.0d0
               a3 =  0.0d0
-            else if (istype == 3) then  ! blinear softening
+            elseif (istype == 3) then  ! blinear softening
               p  =  2.0d0
               a2 =  0.03687d0
               a3 =  20.8343d0
-            else if (istype == 4) then  ! concrete softening
+            elseif (istype == 4) then  ! concrete softening
               p  =  2.0d0
               a2 =  1.3868d0
               a3 =  0.6567d0
-            else if (istype == 5) then  ! hyperbolic softening
+            elseif (istype == 5) then  ! hyperbolic softening
               p  =  4.0d0
               a2 =  2.0d0**(7.d0/3.d0) - 4.5d0
               a3 =  0.0d0
