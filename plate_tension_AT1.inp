@@ -38437,7 +38437,7 @@
 ** UEL ELEMENTS
 ** U1: Linear softening
 ** U2: Exponential softening
-** U3: Bilinear softneing
+** U3: Bilinear softening
 ** U4: Concrete softening
 ** U5: Hyperbolic softening
 *USER ELEMENT, TYPE=U1, NODES=4, COORDINATES=2, PROPERTIES=6, VARIABLES=4
@@ -115154,88 +115154,87 @@
 *Nset, nset=top
    12,   13, 1632, 1633, 1634, 1635, 1636, 1637, 1638, 1639, 1640, 1641, 1642, 1643, 1644, 1645
  1646, 1647, 1648, 1649, 1650
-** 
+**
 ** MATERIALS
-** 
+**
 *Material, name=dummy
 *Elastic
  1.0E-10, 0.2
-** 
+**
 ** BOUNDARY CONDITIONS
-** 
+**
 ** Name: Disp-BC-1 Type: Displacement/Rotation
 *Boundary
 bottom, 1, 2
 ** ----------------------------------------------------------------
-** 
+**
 ** STEP: Step-1
-** 
+**
 *Step, name=Step-1, nlgeom=NO, extrapolation=NO, inc=200000
 *Static, direct
-0.05, 1 
-** 
+0.05, 1
+**
 ** BOUNDARY CONDITIONS
-** 
+**
 ** Name: Disp-BC-2 Type: Displacement/Rotation
 *Boundary
 top, 2, 2, 0.004
-** 
+**
 ** CONTROLS
-** 
+**
 *SOLUTION TECHNIQUE, TYPE=QUASI-NEWTON, REFORM KERNEL=8
 *Controls, parameters=time incrementation
-5000, 5000, , 5000, 5000, , , 10, , , 
-** 
+5000, 5000, , 5000, 5000, , , 10, , ,
+**
 ** OUTPUT REQUESTS
-** 
+**
 *Restart, write, frequency=0
-** 
+**
 ** FIELD OUTPUT: F-Output-1
-** 
+**
 *Output, field
 *Node Output, nset=plate
 NT, U
-** 
+**
 ** HISTORY OUTPUT: H-Output-1
-** 
+**
 *Output, history
 *Node Output, nset=top
 RF2, U2
 *End Step
 ** ----------------------------------------------------------------
-** 
+**
 ** STEP: Step-2
-** 
+**
 *Step, name=Step-2, nlgeom=NO, extrapolation=NO, inc=200000
 *Static, direct
-0.01, 1 
-** 
+0.01, 1
+**
 ** BOUNDARY CONDITIONS
-** 
+**
 ** Name: Disp-BC-2 Type: Displacement/Rotation
 *Boundary
 top, 2, 2, 0.006
-** 
+**
 ** CONTROLS
-** 
+**
 *SOLUTION TECHNIQUE, TYPE=QUASI-NEWTON, REFORM KERNEL=8
 *Controls, parameters=time incrementation
-5000, 5000, , 5000, 5000, , , 10, , , 
-** 
+5000, 5000, , 5000, 5000, , , 10, , ,
+**
 ** OUTPUT REQUESTS
-** 
+**
 *Restart, write, frequency=0
-** 
+**
 ** FIELD OUTPUT: F-Output-1
-** 
+**
 *Output, field
 *Node Output, nset=plate
 NT, U
-** 
+**
 ** HISTORY OUTPUT: H-Output-1
-** 
+**
 *Output, history
 *Node Output, nset=top
 RF2, U2
 *End Step
-

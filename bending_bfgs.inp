@@ -19976,7 +19976,7 @@
 ** UEL ELEMENTS
 ** U1: Linear softening
 ** U2: Exponential softening
-** U3: Bilinear softneing
+** U3: Bilinear softening
 ** U4: Concrete softening
 ** U5: Hyperbolic softening
 *USER ELEMENT, TYPE=U4, NODES=4, COORDINATES=2, PROPERTIES=6, VARIABLES=4
@@ -59633,7 +59633,7 @@
 119822,	17171,	17428,	19968,	19969
 119823,	19971,	16856,	16850,	17014
 *SOLID SECTION,ELSET=DUMMY,MATERIAL=DUMMY
-**  
+**
 **
 *Nset, nset=Set-1
  10,
@@ -59646,48 +59646,48 @@
 *MATERIAL,NAME=DUMMY
 *ELASTIC
 1.0E-8, 0.2
-** 
+**
 ** BOUNDARY CONDITIONS
-** 
+**
 ** Name: BC-1 Type: Displacement/Rotation
 *Boundary
 Set-1,  1,  2
 Set-2,  2,  2
 Set-3, 11, 11
 ** ----------------------------------------------------------------
-** 
+**
 ** STEP: Step-1
-** 
+**
 *Step, name=Step-1, nlgeom=NO, extrapolation=NO, inc=200000
 *Static, direct
 0.01, 1
 **
-** BFGS quasi-newton solver 
+** BFGS quasi-newton solver
 **
 *SOLUTION TECHNIQUE, TYPE=QUASI-NEWTON, REFORM KERNEL=8
-** 
+**
 ** BOUNDARY CONDITIONS
-** 
+**
 ** Name: BC-3 Type: Displacement/Rotation
 *Boundary
 Set-3, 2, 2, -1.
-** 
+**
 ** CONTROLS
-** 
+**
 *Controls, parameters=time incrementation
-1000, 1000, , 1000, 1000, , , 10, , , 
+1000, 1000, , 1000, 1000, , , 10, , ,
 ** OUTPUT REQUESTS
-** 
+**
 *Restart, write, frequency=0
-** 
+**
 ** FIELD OUTPUT: F-Output-1
-** 
+**
 *Output, field
 *NODE OUTPUT,NSET=damage
 NT, U
-** 
+**
 ** HISTORY OUTPUT: H-Output-1
-** 
+**
 *Output, history
 *NODE OUTPUT,NSET=Set-1
 RF2,
